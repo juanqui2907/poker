@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juego de Cartas Interactivo</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1f773d;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 12px 24px;
+      background-color: #ffcb05;
+      color: #333;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+      display: block;
+      margin: 0 auto;
+    }
+
+    button:hover {
+      background-color: #f0b400;
+      transform: scale(1.05);
+    }
+
+    #resultado, #bonus {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .card-container {
+      width: 90px;
+      height: 130px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.8s ease;
+      border-radius: 12px;
+      animation: bounceIn 0.5s ease;
+    }
+
+    .card.show-front {
+      transform: rotateY(180deg);
+    }
+
+    @keyframes bounceIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      box-sizing: border-box;
+      display: flex;
+    }
+
+    .front {
+      background: white;
+      transform: rotateY(180deg);
+      position: relative;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .back {
+      background-color: white;
+      border: 4px solid white;
+      background-image: repeating-linear-gradient(45deg, #7e3f98 0, #7e3f98 1px, transparent 1px, transparent 8px);
+      background-size: 10px 10px;
+      background-repeat: repeat;
+      transform: rotateY(0deg);
+    }
+
+    .corner {
+      position: absolute;
+      font-size: 18px;
+      font-weight: bold;
+      line-height: 1.2;
+      text-align: left;
+    }
+
+    .top-left {
+      top: 8px;
+      left: 8px;
+    }
+
+    .bottom-right {
+      bottom: 8px;
+      right: 8px;
+      transform: rotate(180deg);
+    }
+
+    .center-symbol {
+      font-size: 38px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .red { color: red; }
+    .black { color: black; }
+
+    .bonus-title {
+      width: 100%;
+      font-size: 22px;
+      font-weight: bold;
+      color: #28a745;
+      margin-top: 40px;
+      animation: pulse 1s infinite alternate;
+      text-align: center;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.05); }
+    }
+
+    @keyframes shuffleButton {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .stats {
+      margin-top: 40px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 400px;
+      text-align: left;
+    }
+
+    @media (max-width: 600px) {
+      .card-container {
+        width: 70px;
+        height: 100px;
+      }
+
+      .center-symbol {
+        font-size: 26px;
+      }
+
+      .corner {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🃏 Juego de Cartas</h1>
+  <button id="shuffleBtn" onclick="generarCartas()">Mezclar Cartas</button>
+
+  <div id="resultado"></div>
+  <div id="bonus"></div>
+  <div class="stats" id="estadisticas"></div>
+
+  <audio id="flip-sound" src="https://www.myinstants.com/media/sounds/card-flip.mp3" preload="auto"></audio>
+
+  <script>
+    const flipSound = document.getElementById("flip-sound");
+    let partidasJugadas = 0;
+    let repeticionesTotales = 0;
+
+    function reproducirSonido() {
+      flipSound.currentTime = 0;
+      flipSound.play();
+    }
+
+    function guardarEnHistorial(cartas, bonus) {
+      const historial = JSON.parse(localStorage.getItem('historialCartas')) || [];
+
+      historial.unshift({
+        fecha: new Date().toLocaleString(),
+        cartas,
+        bonus
+      });
+
+      if (historial.length > 10) historial.pop();
+      localStorage.setItem('historialCartas', JSON.stringify(historial));
+    }
+
+    function mostrarHistorial() {
+      const historial = JSON.parse(localStorage.getItem('historialCartas')) || [];
+      const contenedor = document.getElementById("estadisticas");
+
+      if (historial.length === 0) return;
+
+      let html = `<h3>📖 Historial de Partidas</h3>`;
+      historial.forEach(h => {
+        html += `<p><strong>${h.fecha}</strong>: ${h.cartas.join(', ')} ${h.bonus ? '🎁' : ''}</p>`;
+      });
+
+      contenedor.innerHTML += html;
+    }
+
+    function actualizarEstadisticas(repetidas) {
+      partidasJugadas++;
+      repeticionesTotales += repetidas;
+
+      const estadisticas = document.getElementById("estadisticas");
+      estadisticas.innerHTML = `
+        <h3>📊 Estadísticas</h3>
+        <p>Partidas jugadas: <strong>${partidasJugadas}</strong></p>
+        <p>Veces con cartas repetidas: <strong>${repeticionesTotales}</strong></p>
+      `;
+    }
+
+    function generarCartas() {
+      const valores = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+      const palos = ['♥','♣','♦','♠'];
+      const colores = { '♥':'red', '♦':'red', '♣':'black', '♠':'black' };
+
+      const resultado = document.getElementById("resultado");
+      const bonusDiv = document.getElementById("bonus");
+      resultado.innerHTML = "";
+      bonusDiv.innerHTML = "";
+
+      const cartas = [];
+      const cartasDom = [];
+
+      document.getElementById("shuffleBtn").style.animation = "shuffleButton 0.5s ease";
+
+      setTimeout(() => {
+        document.getElementById("shuffleBtn").style.animation = "none";
+      }, 500);
+
+      for (let i = 0; i < 5; i++) {
+        const valor = valores[Math.floor(Math.random() * valores.length)];
+        const palo = palos[Math.floor(Math.random() * palos.length)];
+        const carta = valor + palo;
+        cartas.push(carta);
+
+        const cardDom = crearCarta(valor, palo, colores[palo]);
+        cartasDom.push(cardDom);
+        resultado.appendChild(cardDom);
+      }
+
+      cartasDom.forEach((container, index) => {
+        setTimeout(() => {
+          const card = container.querySelector('.card');
+          card.classList.add('show-front');
+          reproducirSonido();
+        }, 1000 + index * 350);
+      });
+
+      const unicas = new Set(cartas);
+      const repetidas = cartas.length - unicas.size;
+      actualizarEstadisticas(repetidas > 0 ? 1 : 0);
+      guardarEnHistorial(cartas, repetidas > 0);
+
+      if (repetidas > 0) {
+        const valorBonus = valores[Math.floor(Math.random() * valores.length)];
+        const paloBonus = palos[Math.floor(Math.random() * palos.length)];
+        const colorBonus = colores[paloBonus];
+
+        const title = document.createElement("div");
+        title.className = "bonus-title";
+        title.innerText = "🎉 ¡BONUS! Carta extra por repetidas:";
+        bonusDiv.appendChild(title);
+
+        const bonusCard = crearCarta(valorBonus, paloBonus, colorBonus);
+        bonusDiv.appendChild(bonusCard);
+
+        setTimeout(() => {
+          bonusCard.querySelector('.card').classList.add('show-front');
+          reproducirSonido();
+        }, 3500);
+      }
+    }
+
+    function crearCarta(valor, palo, color) {
+      const container = document.createElement("div");
+      container.className = "card-container";
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.addEventListener('click', () => {
+        if (!card.classList.contains('show-front')) {
+          card.classList.add('show-front');
+          reproducirSonido();
+        }
+      });
+
+      const back = document.createElement("div");
+      back.className = "card-face back";
+
+      const front = document.createElement("div");
+      front.className = "card-face front " + (color === 'red' ? 'red' : 'black');
+      front.innerHTML = `
+        <div class="corner top-left">${valor}${palo}</div>
+        <div class="center-symbol">${palo}</div>
+        <div class="corner bottom-right">${valor}${palo}</div>
+      `;
+
+      card.appendChild(back);
+      card.appendChild(front);
+      container.appendChild(card);
+
+      return container;
+    }
+
+    window.onload = mostrarHistorial;
+  </script>
+
+</body>
+</html>
