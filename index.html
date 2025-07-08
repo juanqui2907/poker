@@ -155,9 +155,11 @@
       background: rgba(255,255,255,0.1);
       color: #fff;
       border-radius: 10px;
-      padding: 20px;
-      max-width: 400px;
+      padding: 12px;
+      max-width: 300px;
       text-align: left;
+      font-size: 14px;
+      line-height: 1.4;
     }
 
     @media (max-width: 600px) {
@@ -307,10 +309,8 @@
       card.className = "card";
 
       card.addEventListener('click', () => {
-        if (!card.classList.contains('show-front')) {
-          card.classList.add('show-front');
-          reproducirSonido();
-        }
+        card.classList.toggle('show-front');
+        reproducirSonido();
       });
 
       const back = document.createElement("div");
