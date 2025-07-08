@@ -177,12 +177,52 @@
         font-size: 14px;
       }
     }
+
+    body.fondo-verde {
+      background-color: #1f773d;
+    }
+
+    body.fondo-madera {
+      background-image: url('https://i.imgur.com/xWwzvTn.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    body.fondo-rojo {
+      background-color: #8B0000;
+      background-image: radial-gradient(#a00000, #330000);
+    }
+
+    body.tema-claro {
+      background-color: #f0f0f0;
+      color: #111;
+    }
+
+    body.tema-claro h1,
+    body.tema-claro .stats,
+    body.tema-claro .bonus-title {
+      color: #111;
+    }
+
+    .tema-claro .stats {
+      background: rgba(0,0,0,0.05);
+    }
+
+    .tema-claro button {
+      background-color: #333;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
 
   <h1>🃏 Juego de Cartas</h1>
   <button id="shuffleBtn" onclick="generarCartas()">Mezclar Cartas</button>
+  <div style="text-align: center; margin-top: 10px;">
+    <button onclick="cambiarFondo()">🎨 Cambiar Fondo</button>
+    <button onclick="alternarTema()">🌗 Tema Claro/Oscuro</button>
+  </div>
 
   <div id="resultado"></div>
   <div id="bonus"></div>
@@ -333,6 +373,28 @@
     }
 
     window.onload = mostrarHistorial;
+
+    let fondos = ['fondo-verde', 'fondo-madera', 'fondo-rojo'];
+    let fondoActual = 0;
+    let temaClaro = false;
+
+    function cambiarFondo() {
+      document.body.classList.remove(fondos[fondoActual]);
+      fondoActual = (fondoActual + 1) % fondos.length;
+      document.body.classList.add(fondos[fondoActual]);
+    }
+
+    function alternarTema() {
+      temaClaro = !temaClaro;
+      if (temaClaro) {
+        document.body.classList.add('tema-claro');
+      } else {
+        document.body.classList.remove('tema-claro');
+      }
+    }
+
+    // Aplicar fondo inicial
+    document.body.classList.add(fondos[fondoActual]);
   </script>
 
 </body>
